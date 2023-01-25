@@ -1,0 +1,158 @@
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick.min.js"></script>
+<div class="nws-featured-product py-5">
+  <div class="container">
+      {% assign selected_prod = section.settings.f_prod %}
+    <div class="product-images-info row justify-content-between">
+      <div class="product-images col-12 col-lg-6">
+          <div class="product-detail-image mb-2">
+            <div class="nws-slides-wrapper">
+            <div class="nws-main-imgs">
+              {% for image in selected_prod.images %}
+                <div class="nws-prd-img">
+                   <img src="{{ image.src | img_url: '320x400' }}" data-img-id="{{ image.id }}" data-option="{{ image.alt }}" alt="{{ image.alt }}" />
+                </div>
+               {% endfor %}
+            </div>
+           <div class="nws-thumbnail-wrapper">
+              <div class="nws-thumbnail-imgs">
+                {% for image in selected_prod.images %}
+                  <div class="nws-prd-img">
+                     <img src="{{ image.src | img_url: '120x' }}" data-img-id="{{ image.id }}" data-option="{{ image.alt }}" alt="{{ image.alt }}" />
+                  </div>
+                 {% endfor %}
+               </div> 
+            </div> 
+            </div>
+          </div>
+        </div>
+      <div class="product-info summary entry-summary col-12 col-lg-6">
+        	<div class="content-summary max-height-false d-flex flex-wrap">
+               <h1 class="product-name entry-title">{{ selected_prod.title }}</h1>
+               <div class="psgl-vendor-sku">
+                  <div class="psgl-vendor d-inline-block">
+                   <label>Vendor: </label> <a href="{{collections[selected_prod.vendor].url | default: routes.all_products_collection_url}}?q=vendor:{{selected_prod.vendor | handleize}}"><span></span>{{ selected_prod.vendor }}</span></a>
+                  </div>
+                  <span class="pl-2 pr-2" style="color: #dee2e6">|</span>
+                  <div class="psgl-sku d-inline-block">
+                  {% assign current_variant = selected_prod.selected_or_first_available_variant %}
+                   <label>SKU:</label> <span class="variant-sku"> {{ current_variant.sku }}</span>
+                  </div>
+               </div>
+               <div class="entry-price price">
+                  <ins class="subtt_gr-money">
+                    {{ current_variant.price | money }}
+                  </ins>
+                  <del class="subtt_gr-c-money{%if current_variant.compare_at_price <= current_variant.price or current_variant.compare_at_price == null%} d-none{%endif%}">
+                    {{ current_variant.compare_at_price | default: current_variant.price | money }}
+                  </del>
+              </div>
+              <div class="entry-short-description">
+                {{ selected_prod.description | strip_html | truncatewords: 50 }}
+              </div>
+               <div class="flash-deal">
+                {%-if settings.stock_countdown-%}
+                  {%- assign flash_deal = true -%}
+                  <div class="product-single-countdown d-flex flex-nowrap align-items-center">
+                    <p class="mb-0 label_countdown">{%render 'icon-oclock', more_class: ' animated infinite tada'%} {{'general.countdown.label'|t}}</p>
+                    <div class="kt_countdown style02{% unless selected_prod.metafields.event.countdown != blank or settings.time_countdown != blank%} kt_loop_bar{% endunless %} kt_countdown_page clearfix" data-time="{% if selected_prod.metafields.event.countdown != blank%}{{selected_prod.metafields.event.countdown}}{%elsif settings.time_countdown != blank%}{{settings.time_countdown}}{% endif %}"></div>
+                  </div>
+                {%-endif-%}
+                {%-if settings.use_progress_bar_out_of_stock-%}
+                  {%- assign flash_deal = true -%}
+                  {%-assign show_progress = false-%}
+                  {%- if current_variant.inventory_quantity < settings.stock_to and current_variant.inventory_management -%}{%-assign show_progress = true-%}{%- endif -%}
+                  {%- unless current_variant.inventory_quantity <= 0 and selected_prod.has_only_default_variant -%}
+                    {%- assign inv_qty  = current_variant.inventory_quantity -%}
+                  {%- endunless -%}
+              <div class="kt_progress_bar">
+                <div class="kt_progress_bar_pr progress_bar-{{section.id}}" data-stock-from="{{settings.stock_from}}" data-stock-to="{{settings.stock_to}}" data-stock-bg-process="{{settings.stock_bg_process}}"{% if show_progress %} data-remaining_items="{{inv_qty}}"{% endif %}>
+                  <p>Hurry! Only  <span class="count" style="background-color: rgb(255, 255, 255); color: rgb(46, 49, 143);">12</span>  left in stock.</p><div class="progress" style="height: 10px;"><div class="progress-bar" role="progressbar" style="width: 20%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div></div>
+                </div>
+              </div>
+            {%-endif-%}
+            </div>
+            <form class="amr-atc" method="post" action="/cart/add">
+              {%- unless selected_prod.has_only_default_variant -%}
+                <label>Hardware:</label>
+                <select class="product-form__variants pr-group" style="border-top: none;border-bottom: none;border-radius: 5px;outline: none !important;">
+                  {%- for variant in selected_prod.variants -%}
+                    {%- if variant.available -%}
+                      <option {% if variant == selected_prod.selected_or_first_available_variant %} selected="selected"{% endif %} value="{{ variant.id }}" data-value="{{ variant.title | escape }}" data-price="{{variant.price}}" data-c-price="{{variant.compare_at_price | default: variant.price}}">
+                        {{ variant.title }}
+                      </option>
+                    {%- else -%}
+                      <option disabled="disabled">{{ variant.title }} - {{ 'products.product.sold_out' | t }}</option>
+                    {%- endif -%}
+                  {%- endfor -%}
+                </select>
+                {%-endunless-%}
+               <div class="entry-buttons">   
+                <div class="quantity js-item-quantity item-quantity--{{ section.id }}">
+                  <div class="control">
+                    <a class="btn-number qtyminus quantity-minus" href="#"></a>
+                    <input type="text" data-step="1" name="quantity" data-min="1" value="1" id="qty-{{section.id}}" class="input-qty input-text qty" size="4" pattern="[0-9]*">
+                    <a class="btn-number qtyplus quantity-plus" href="#"></a>
+                  </div>
+                </div>
+                <div class="nws-cart-btn-wrapper">  
+                  <input type="hidden" name="id" value="{{ selected_prod.variants.first.id }}" />
+                  <input class="nws-cart-btn" type="submit" value="{% if selected_prod.variants.first.available%}Add to Cart{% else %}Sold Out{% endif%}" class="btn" 
+                  {% unless selected_prod.variants.first.available %}disabled{% endunless %} />
+                </div>  
+              </div>  
+          </form>     
+           </div>
+      	</div>
+    </div>
+  </div>
+</div>
+    <script>
+   $('.nws-main-imgs').slick({
+  slidesToShow: 1,
+  slidesToScroll: 1,
+  arrows: true,
+  dots: false,       
+  fade: true,
+  asNavFor: '.nws-thumbnail-imgs'
+});
+$('.nws-thumbnail-imgs').slick({
+  slidesToShow: 4,
+  slidesToScroll: 1,
+  asNavFor: '.nws-main-imgs',
+  dots: false,
+  focusOnSelect: true,
+  vertical:true,
+  verticalSwiping: true,
+  arrows: false,
+  responsive:[
+    {
+      breakpoint: 768,
+      settings: {
+        vertical:false,
+        verticalSwiping: false
+      }
+    }
+  ]
+  
+});
+    </script>
+{% schema %}
+  {
+    "name": "Section name",
+    "settings": [
+      {
+        "type":"product",
+        "id":"f_prod",
+        "label":"Select Product"
+      }
+    ]
+
+  }
+{% endschema %}
+
+{% stylesheet %}
+{% endstylesheet %}
+
+{% javascript %}
+{% endjavascript %}
